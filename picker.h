@@ -15,10 +15,13 @@
     UILabel *minsLabel;
     UILabel *secsLabel;
 
+    NSInteger *seconds[59];
+    NSInteger *minutes[59];
+    NSInteger *hours[59];
 }
-
 @property(nonatomic, retain) UIPickerView *pickMe;
 @property(nonatomic, retain) UILabel *hourLabel, *minsLabel, *secsLabel;
+@property(nonatomic, retain) NSInteger *seconds, *minutes, *hours;
 
 // returns the number of 'columns' to display.
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;

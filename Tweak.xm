@@ -1,19 +1,18 @@
 #import <substrate.h> //used for MSHookIvar
 #import <Foundation/Foundation.h>
-#import "picker.m"
+//#import "picker.h"
 
 /**
 Interface all the things so that I can reference their stuff later
 **/
-
-@class SecondsPicker;
+//@class SecondsPicker;
 
 @interface TimerControlsView : UIView {
   UIDatePicker *_timePicker;
 }
-- (void)setTime:(double)arg1;
-- (void)setTimerToneName:(id)arg1;
-- (void)loadView;
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
+- (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component;
 @end
 
 @interface TimerViewController : UIViewController {
@@ -21,7 +20,6 @@ Interface all the things so that I can reference their stuff later
   NSTimer *_timer;
   double _time;
 }
-- (void)viewDidAppear:(_Bool)arg1;
 - (void)loadView;
 @end
 
@@ -31,8 +29,9 @@ Set up my own (instance? Instance-ish) variables to store values in
 
 UIView *timerControlsViewHooked;
 UIDatePicker *timePickerHooked;
-//Setting flag to mark first time view is loaded in order to not re-assign things over and over
-
+NSInteger *seconds[59];
+NSInteger *minutes[59];
+NSInteger *hours[59];
 
 /**
 And now its time to start hooking!
@@ -44,15 +43,35 @@ And now its time to start hooking!
   //Have to run original code first (presumabley) so that the reference to the _timePicker is actually not null
   %orig;
 
-    //First time view is loaded, do stuff
+  //The goal here is to get myself a reference to the UIDatePicker timePicker so I can hide it
     timerControlsViewHooked = MSHookIvar<TimerControlsView *>(self, "_timerControlsView");
-    //The goal here is to get myself a reference to the UIDatePicker timePicker so I can modify it
     timePickerHooked = MSHookIvar<UIDatePicker *>(timerControlsViewHooked, "_timePicker");
-    timePickerHooked = nil;
 
-    SecondsPicker *myPicker = [[SecondsPicker alloc]init:(UIView*)timerControlsViewHooked];
+    //Hiding the original UIDatePicker so we can add our own UIPickerView
+    timePickerHooked.hidden = true;
 
-  [self.view addSubview:myPicker];
+    //Now to add our own UIPickerView
+    //SecondsPicker *myPicker = [[SecondsPicker alloc] init:timerControlsViewHooked];
+
+    UIPickerView *pickMe = [[UIPickerView alloc] initWithFrame:CGRectMake(0, 100, self.view.frame.size.width, 200)];
+
+    UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 2 - 15, 75, 30)];
+    hourLabel.text = @"hour";
+    hourLabel.textColor = [UIColor colorWithRed:(188/255.f) green:0 blue:0 alpha:1.0];
+    [self.view addSubview:hourLabel];
+
+    UILabel *minsLabel = [[UILabel alloc] initWithFrame:CGRectMake(42 + (pickMe.frame.size.width / 3), pickMe.frame.size.height / 2 - 15, 75, 30)];
+    minsLabel.text = @"min";
+    minsLabel.textColor = [UIColor colorWithRed:(188/255.f) green:0 blue:0 alpha:1.0];
+    [self.view addSubview:minsLabel];
+
+    UILabel *secsLabel = [[UILabel alloc] initWithFrame:CGRectMake(42 + (pickMe.frame.size.width / 3) * 2, pickMe.frame.size.height / 2 - 15, 75, 30)];
+    secsLabel.text = @"secs";
+    secsLabel.textColor = [UIColor colorWithRed:(188/255.f) green:0 blue:0 alpha:1.0];
+    [self.view addSubview:secsLabel];
+
+
+    [timerControlsViewHooked addSubview:pickMe];
 
 }
 %end

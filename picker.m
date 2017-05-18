@@ -1,4 +1,4 @@
-c#import <picker.h>
+#import <picker.h>
 @implementation SecondsPicker
 
 @synthesize pickMe;
