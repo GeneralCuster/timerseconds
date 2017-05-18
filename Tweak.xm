@@ -10,9 +10,6 @@ Interface all the things so that I can reference their stuff later
 @interface TimerControlsView : UIView {
   UIDatePicker *_timePicker;
 }
-- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;
-- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
-- (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component;
 @end
 
 @interface TimerViewController : UIViewController {
@@ -21,6 +18,42 @@ Interface all the things so that I can reference their stuff later
   double _time;
 }
 - (void)loadView;
+@end
+
+@interface pickerDel : UIViewController <UIPickerViewDataSource, UIPickerViewDelegate>
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
+- (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component;
+- (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view;
+
+@end
+
+@implementation pickerDel
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView{
+    return 3;
+}
+
+// returns the # of rows in each component..
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component{
+  if(component == 0)
+      //For hours
+      return 24;
+
+  //For the minutes and seconds
+  return 60;
+}
+
+- (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component{
+    return 30;
+}
+
+- (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view{
+    UILabel *columnView = [[UILabel alloc] initWithFrame:CGRectMake(35, 0, view.frame.size.width/3 - 35, 30)];
+    columnView.text = [NSString stringWithFormat:@"%lu", (long) row];
+    columnView.textAlignment = NSTextAlignmentLeft;
+
+    return columnView;
+}
 @end
 
 /**
@@ -53,7 +86,11 @@ And now its time to start hooking!
     //Now to add our own UIPickerView
     //SecondsPicker *myPicker = [[SecondsPicker alloc] init:timerControlsViewHooked];
 
+    pickerDel *pDel = [[pickerDel alloc] init];
+
     UIPickerView *pickMe = [[UIPickerView alloc] initWithFrame:CGRectMake(0, 100, self.view.frame.size.width, 200)];
+    [pickMe setDataSource: pDel];
+    [pickMe setDelegate: pDel];
 
     UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 2 - 15, 75, 30)];
     hourLabel.text = @"hour";
