@@ -20,6 +20,7 @@ int numSecs = 0;
 }
   -(void)startTimer:(id)arg1;
   -(void)loadView;
+  -(void)startUpdatingTimerUI;
 @end
 
 @interface pickerDel : UIViewController <UIPickerViewDataSource, UIPickerViewDelegate>
@@ -133,10 +134,12 @@ And now its time to start hooking!
 - (void)startTimer:(id)arg1{
 //If the user has picked a value when starting the timer, then numSecs will be updated, otherwise it will be 0.
 //Now we need to create a timer lasting for the number of seconds specified by numSecs
-
-
-//Our reference to apple's stock timer object.
+double doubleTimeHooked = MSHookIvar<double>(self, "_time");
 timerHooked = MSHookIvar<NSTimer *>(self, "_timer");
+
+
+
+
 }
 
 %end
