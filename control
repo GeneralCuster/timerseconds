@@ -3,7 +3,7 @@ Name: timerSeconds
 Depends: mobilesubstrate
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
+Description: This tweak is still in beta, when finished it will add a seconds wheel to the timer app.
 Maintainer: GeneralCuster
 Author: GeneralCuster
 Section: Tweaks

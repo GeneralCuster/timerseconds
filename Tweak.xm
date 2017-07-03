@@ -5,7 +5,8 @@
 /**
 Interface all the things so that I can reference their stuff later
 **/
-//@class SecondsPicker;
+
+int numSecs = 0;
 
 @interface TimerControlsView : UIView {
   UIDatePicker *_timePicker;
@@ -17,7 +18,8 @@ Interface all the things so that I can reference their stuff later
   NSTimer *_timer;
   double _time;
 }
-- (void)loadView;
+  -(void)startTimer:(id)arg1;
+  -(void)loadView;
 @end
 
 @interface pickerDel : UIViewController <UIPickerViewDataSource, UIPickerViewDelegate>
@@ -25,7 +27,7 @@ Interface all the things so that I can reference their stuff later
 - (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
 - (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component;
 - (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view;
-
+- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component;
 @end
 
 @implementation pickerDel
@@ -47,12 +49,23 @@ Interface all the things so that I can reference their stuff later
     return 30;
 }
 
-- (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view{
-    UILabel *columnView = [[UILabel alloc] initWithFrame:CGRectMake(35, 0, view.frame.size.width/3 - 35, 30)];
-    columnView.text = [NSString stringWithFormat:@"%lu", (long) row];
-    columnView.textAlignment = NSTextAlignmentLeft;
+- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
 
-    return columnView;
+  NSInteger hours = [pickerView selectedRowInComponent:0];
+  NSInteger mins = [pickerView selectedRowInComponent:1];
+  NSInteger secs = [pickerView selectedRowInComponent:2];
+
+  numSecs = (hours * 3600) + (mins * 60) + secs;
+}
+
+- (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view{
+    UILabel *columnText = [[UILabel alloc] initWithFrame:CGRectMake(35, 0, view.frame.size.width/3 -35, 30)];
+    columnText.text = [NSString stringWithFormat:@"%lu", (long) row];
+    columnText.textColor = [UIColor whiteColor];
+    columnText.font = [UIFont fontWithName:@"HelveticaNeue-Bold" size:23];
+    columnText.textAlignment = NSTextAlignmentLeft;
+
+    return columnText;
 }
 @end
 
@@ -64,7 +77,12 @@ UIView *timerControlsViewHooked;
 UIDatePicker *timePickerHooked;
 NSInteger *seconds[59];
 NSInteger *minutes[59];
-NSInteger *hours[59];
+NSInteger *hours[23];
+
+//Initializing the picker
+pickerDel *pDel = [[pickerDel alloc] init];
+UIPickerView *pickMe = [[UIPickerView alloc] init];
+NSTimer *timerHooked = [[NSTimer alloc] init];
 
 /**
 And now its time to start hooking!
@@ -84,17 +102,17 @@ And now its time to start hooking!
     timePickerHooked.hidden = true;
 
     //Now to add our own UIPickerView
-    //SecondsPicker *myPicker = [[SecondsPicker alloc] init:timerControlsViewHooked];
 
-    pickerDel *pDel = [[pickerDel alloc] init];
-
-    UIPickerView *pickMe = [[UIPickerView alloc] initWithFrame:CGRectMake(0, 100, self.view.frame.size.width, 200)];
+    //Setting size and delegate
+    //[pickMe initWithFrame: CGRectMake(0, 100, self.view.frame.size.width, 200)];
     [pickMe setDataSource: pDel];
     [pickMe setDelegate: pDel];
 
-    UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 2 - 15, 75, 30)];
+    //creating labels for the picker
+    UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 2 + 85, 75, 30)];
     hourLabel.text = @"hour";
     hourLabel.textColor = [UIColor colorWithRed:(188/255.f) green:0 blue:0 alpha:1.0];
+
     [self.view addSubview:hourLabel];
 
     UILabel *minsLabel = [[UILabel alloc] initWithFrame:CGRectMake(42 + (pickMe.frame.size.width / 3), pickMe.frame.size.height / 2 - 15, 75, 30)];
@@ -111,4 +129,14 @@ And now its time to start hooking!
     [timerControlsViewHooked addSubview:pickMe];
 
 }
+
+- (void)startTimer:(id)arg1{
+//If the user has picked a value when starting the timer, then numSecs will be updated, otherwise it will be 0.
+//Now we need to create a timer lasting for the number of seconds specified by numSecs
+
+
+//Our reference to apple's stock timer object.
+timerHooked = MSHookIvar<NSTimer *>(self, "_timer");
+}
+
 %end
