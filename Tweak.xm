@@ -10,6 +10,7 @@ int numSecs = 0;
 
 @interface TimerControlsView : UIView {
   UIDatePicker *_timePicker;
+  TimerTimeView *_timeView;
 }
 @end
 
@@ -110,10 +111,9 @@ And now its time to start hooking!
     [pickMe setDelegate: pDel];
 
     //creating labels for the picker
-    UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 2 + 85, 75, 30)];
+    UILabel *hourLabel = [[UILabel alloc] initWithFrame:CGRectMake(42, pickMe.frame.size.height / 3 + 85, 75, 30)];
     hourLabel.text = @"hour";
     hourLabel.textColor = [UIColor colorWithRed:(188/255.f) green:0 blue:0 alpha:1.0];
-
     [self.view addSubview:hourLabel];
 
     UILabel *minsLabel = [[UILabel alloc] initWithFrame:CGRectMake(42 + (pickMe.frame.size.width / 3), pickMe.frame.size.height / 2 - 15, 75, 30)];
@@ -132,14 +132,23 @@ And now its time to start hooking!
 }
 
 - (void)startTimer:(id)arg1{
-//If the user has picked a value when starting the timer, then numSecs will be updated, otherwise it will be 0.
-//Now we need to create a timer lasting for the number of seconds specified by numSecs
-double doubleTimeHooked = MSHookIvar<double>(self, "_time");
+//double timeHooked = MSHookIvar<double>(self, "_time");
 timerHooked = MSHookIvar<NSTimer *>(self, "_timer");
 
+//create a timer out of the picker we made
+[NSTimer scheduledTimerWithTimeInterval:numSecs
+                                     target:self
+                                   selector:@selector(timerTick)
+                                   userInfo:nil
+                                    repeats:NO];
+
+//Replace the app's timer with our own
 
 
+}
 
+-(void) theAction{
+  pickMe.hidden = true;
 }
 
 %end
