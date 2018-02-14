@@ -1,50 +1,26 @@
 #import <substrate.h> //used for MSHookIvar
 #import <Foundation/Foundation.h>
-//#import "picker.h"
+#import "Tweak.h"
+
+double numSecs = 0;
 
 /**
-Interface all the things so that I can reference their stuff later
+Set up my own (instance? Instance-ish) variables to store values in
 **/
-
-int numSecs = 0;
-
-@interface TimerControlsView : UIView {
-  UIDatePicker *_timePicker;
-  TimerTimeView *_timeView;
-}
-@end
-
-@interface TimerViewController : UIViewController {
-  TimerControlsView *_timerControlsView;
-  NSTimer *_timer;
-  double _time;
-}
-  -(void)startTimer:(id)arg1;
-  -(void)loadView;
-  -(void)startUpdatingTimerUI;
-@end
-
-@interface pickerDel : UIViewController <UIPickerViewDataSource, UIPickerViewDelegate>
-- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;
-- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
-- (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component;
-- (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view;
-- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component;
-@end
 
 @implementation pickerDel
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView{
     return 3;
 }
-
 // returns the # of rows in each component..
 - (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component{
-  if(component == 0)
+  if(component == 0){
       //For hours
       return 24;
-
+    }else{
   //For the minutes and seconds
   return 60;
+  }
 }
 
 - (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component{
@@ -71,34 +47,37 @@ int numSecs = 0;
 }
 @end
 
-/**
-Set up my own (instance? Instance-ish) variables to store values in
-**/
-
 UIView *timerControlsViewHooked;
 UIDatePicker *timePickerHooked;
+UIView *timeViewHooked;
 NSInteger *seconds[59];
 NSInteger *minutes[59];
 NSInteger *hours[23];
 
-//Initializing the picker
+//Initializing the variables
 pickerDel *pDel = [[pickerDel alloc] init];
 UIPickerView *pickMe = [[UIPickerView alloc] init];
 NSTimer *timerHooked = [[NSTimer alloc] init];
+double timeHooked = 0.0;
+double timeValueHooked = 0.0;
+
+//Flag telling us if we need to recalculate the end time (timeHooked) 1 = yes, 0 = no
+int flag = 0;
 
 /**
 And now its time to start hooking!
 **/
 
 %hook TimerViewController
-- (void)loadView{
-
+-(void)loadView{
+  NSLog(@"TimerViewController - loadView");
   //Have to run original code first (presumabley) so that the reference to the _timePicker is actually not null
   %orig;
 
   //The goal here is to get myself a reference to the UIDatePicker timePicker so I can hide it
     timerControlsViewHooked = MSHookIvar<TimerControlsView *>(self, "_timerControlsView");
     timePickerHooked = MSHookIvar<UIDatePicker *>(timerControlsViewHooked, "_timePicker");
+    timeHooked = MSHookIvar<double>(self, "_time");
 
     //Hiding the original UIDatePicker so we can add our own UIPickerView
     timePickerHooked.hidden = true;
@@ -130,25 +109,84 @@ And now its time to start hooking!
     [timerControlsViewHooked addSubview:pickMe];
 
 }
-
-- (void)startTimer:(id)arg1{
-//double timeHooked = MSHookIvar<double>(self, "_time");
-timerHooked = MSHookIvar<NSTimer *>(self, "_timer");
-
-//create a timer out of the picker we made
-[NSTimer scheduledTimerWithTimeInterval:numSecs
-                                     target:self
-                                   selector:@selector(timerTick)
-                                   userInfo:nil
-                                    repeats:NO];
-
-//Replace the app's timer with our own
-
-
+-(void)startTimer:(id)arg1{
+  %orig;
+  NSLog(@"TimerViewController - startTimer; time: %f", timeHooked);
 }
+-(void)timerTick:(id)arg1{
+  %orig;
 
--(void) theAction{
-  pickMe.hidden = true;
+  if(flag == 1){
+    //On the first urn of timerTick we want to set our own end time.
+    timeHooked = CFAbsoluteTimeGetCurrent() + numSecs;
+    flag = 0;
+  }
+
+  NSLog(@"TimerViewController - timerTick; timeHooked is %f", timeHooked);
+  NSLog(@"Current time in seconds: %f", CFAbsoluteTimeGetCurrent());
 }
-
+-(void)cancelTimer:(id)arg1{
+  NSLog(@"TimerViewController - cancelTimer");
+  %orig;
+}
+-(void)pauseResumeTimer:(id)arg1{
+  NSLog(@"TimerViewController - pauseResumeTimer");
+  %orig;
+}
+-(void)startUpdatingTimerUI{
+    NSLog(@"TimerViewController - startUpdatingTimerUI");
+    %orig;
+}
+-(void)stopUpdatingTimerUI{
+  NSLog(@"TimerViewController - stopUpdatingTimerUI");
+  %orig;
+}
 %end
+
+%hook TimerControlsView
+-(void)setTime:(double)arg1{
+  %orig;
+  NSLog(@"TimerControlsView - setTime.  arg1 is %f, timeHooked is %f", arg1, timeHooked);
+}
+-(void)setState:(int)arg1 animate:(_Bool)arg2{
+  %orig;
+  NSLog(@"TimerControlsView - setState, timeHooked is: %f", timeHooked);
+}
+%end
+
+%hook TimerTimeView
+-(void)configureTimeLabel{
+  %orig;
+  NSLog(@"TimerTimeView - configureTimeLabel");
+}
+%end
+
+%hook TimeView
+-(void)configureTimeLabel{
+  %orig;
+  timeValueHooked = MSHookIvar<double>(self, "_timeValue");
+  NSLog(@"TimeView - configureTimeLabel; _timeValue is: %f", timeValueHooked);
+}
+-(_Bool)showSubseconds{
+  %orig;
+  NSLog(@"TimeView - showSubseconds, timeHooked is %f", timeHooked);
+  return nil;
+}
+%end;
+
+%hook MTTimerButtonsController
+- (void)_startStopButtonTapped:(id)arg1{
+  NSLog(@"MTTimerButtonsController - _startStopButtonTapped");
+
+  UIButton *button = MSHookIvar<UIButton *>(self, "_startStopButton");
+  NSString *label = [button titleForState:UIControlStateNormal];
+  if([label isEqualToString:@"Start"]){
+    timeHooked = CFAbsoluteTimeGetCurrent() + numSecs;
+    NSLog(@"tapped Start: %f", timeHooked);
+  }
+
+  //If this button is tapped, the end time needs to be recalculated, so set the flag
+  flag = 1;
+  %orig;
+}
+%end;
