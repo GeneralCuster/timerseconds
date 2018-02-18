@@ -3,16 +3,13 @@
 #import "Tweak.h"
 
 double numSecs = 0;
-
 /**
 Set up my own (instance? Instance-ish) variables to store values in
 **/
-
 @implementation pickerDel
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView{
     return 3;
 }
-// returns the # of rows in each component..
 - (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component{
   if(component == 0){
       //For hours
@@ -22,11 +19,9 @@ Set up my own (instance? Instance-ish) variables to store values in
   return 60;
   }
 }
-
 - (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component{
     return 30;
 }
-
 - (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
 
   NSInteger hours = [pickerView selectedRowInComponent:0];
@@ -35,7 +30,6 @@ Set up my own (instance? Instance-ish) variables to store values in
 
   numSecs = (hours * 3600) + (mins * 60) + secs;
 }
-
 - (UIView *)pickerView:(UIPickerView *)pickerView viewForRow:(NSInteger)row forComponent:(NSInteger)component reusingView:(UIView *)view{
     UILabel *columnText = [[UILabel alloc] initWithFrame:CGRectMake(35, 0, view.frame.size.width/3 -35, 30)];
     columnText.text = [NSString stringWithFormat:@"%lu", (long) row];
@@ -58,6 +52,7 @@ NSInteger *hours[23];
 pickerDel *pDel = [[pickerDel alloc] init];
 UIPickerView *pickMe = [[UIPickerView alloc] init];
 NSTimer *timerHooked = [[NSTimer alloc] init];
+UILabel *timeLabelHooked = [[UILabel alloc] init];
 double timeHooked = 0.0;
 double timeValueHooked = 0.0;
 
@@ -117,13 +112,15 @@ And now its time to start hooking!
   %orig;
 
   if(flag == 1){
-    //On the first urn of timerTick we want to set our own end time.
+    //On the first run of timerTick we want to set our own end time.
     timeHooked = CFAbsoluteTimeGetCurrent() + numSecs;
+    //set flag back to 0 so we know not to update it again unless _startStopButtonTapped changes it to 1
     flag = 0;
   }
 
   NSLog(@"TimerViewController - timerTick; timeHooked is %f", timeHooked);
   NSLog(@"Current time in seconds: %f", CFAbsoluteTimeGetCurrent());
+  NSLog(@"Time Label: %@", timeLabelHooked.text);
 }
 -(void)cancelTimer:(id)arg1{
   NSLog(@"TimerViewController - cancelTimer");
@@ -145,8 +142,11 @@ And now its time to start hooking!
 
 %hook TimerControlsView
 -(void)setTime:(double)arg1{
+  //Override the arg its getting from the stock timerPicker
+  arg1 = timeHooked - CFAbsoluteTimeGetCurrent();
   %orig;
   NSLog(@"TimerControlsView - setTime.  arg1 is %f, timeHooked is %f", arg1, timeHooked);
+  NSLog(@"arg1 is: %f", arg1);
 }
 -(void)setState:(int)arg1 animate:(_Bool)arg2{
   %orig;
@@ -165,10 +165,12 @@ And now its time to start hooking!
 -(void)configureTimeLabel{
   %orig;
   timeValueHooked = MSHookIvar<double>(self, "_timeValue");
-  NSLog(@"TimeView - configureTimeLabel; _timeValue is: %f", timeValueHooked);
+  timerControlsViewHooked = MSHookIvar<UILabel *>(self, "_timeLabel");
+  NSLog(@"TimeView - configureTimeLabel; _timeValue is: %f, _timeLabel is: %@", timeValueHooked, timeLabelHooked.text);
 }
 -(_Bool)showSubseconds{
   %orig;
+  timeValueHooked = MSHookIvar<double>(self, "_timeValue");
   NSLog(@"TimeView - showSubseconds, timeHooked is %f", timeHooked);
   return nil;
 }
@@ -178,13 +180,13 @@ And now its time to start hooking!
 - (void)_startStopButtonTapped:(id)arg1{
   NSLog(@"MTTimerButtonsController - _startStopButtonTapped");
 
+/*
   UIButton *button = MSHookIvar<UIButton *>(self, "_startStopButton");
   NSString *label = [button titleForState:UIControlStateNormal];
   if([label isEqualToString:@"Start"]){
     timeHooked = CFAbsoluteTimeGetCurrent() + numSecs;
     NSLog(@"tapped Start: %f", timeHooked);
-  }
-
+  }*/
   //If this button is tapped, the end time needs to be recalculated, so set the flag
   flag = 1;
   %orig;
